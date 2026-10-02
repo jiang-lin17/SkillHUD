@@ -1,4 +1,4 @@
-﻿# 🎯 SkillHUD — 围绕 TRAE 的 Skill 面板
+# 🎯 SkillHUD — 围绕 TRAE 的 Skill 面板
 
 > 给 TRAE 装一个悬浮侧边栏，所有已安装的 Skill 的功能和调用方法，就在旁边、一目了然。
 
@@ -28,17 +28,19 @@ SkillHUD 就是贴在 TRAE 边上的**独立悬浮窗**——打开 TRAE 它自�
 ├─────────────────────────────────────┤
 │ 🧩 ○ 只显示实用工具（隐藏飞书/企微）│ ← 平台型开关
 ├─────────────────────────────────────┤
-│ 🛠️ skill-creator            ✅ 已装 │
+│ 🛠️ skill-creator            [内置] │
 │    创建新 TRAE Skill                │
 │ 💬 帮我创建一个新 Skill   💬 我想…  │ ← 点触发词 = 复制
 ├─────────────────────────────────────┤
-│ 🐙 github                    ✅ 已装 │
+│ 🐙 github                   [插件] │
 │    浏览仓库 / PR / Issue             │
 ├─────────────────────────────────────┤
-│ 📈 full-link-stock-analysis  ✅ 已装 │
+│ 📈 full-link-stock-analysis [插件] │
 │    A 股 / 港股 / 美股个股分析        │
 ├─────────────────────────────────────┤
-│ ● 守护运行中              显示 15/50│ ← 状态栏
+│ ▶ 未安装 / 推荐  9                  │ ← 折叠区（overlay 未命中）
+├─────────────────────────────────────┤
+│ 本地清单 · 54 项            显示 13 │ ← 状态栏（真实扫描结果）
 └─────────────────────────────────────┘
         ↑ 悬浮在 TRAE 旁边，始终置顶
 ```
@@ -61,7 +63,7 @@ npm start
 powershell -ExecutionPolicy Bypass -File run-win.ps1
 ```
 
-用 .NET WebBrowser 包装同一个 `index.html`，UI 完全一致。
+用 .NET WebBrowser 包装同一个 `index.html`。**注意**：该内核较旧，不支持扫描接口，只能降级为「离线预览（仅 overlay）」，功能受限，仅供看样式。
 
 ### 方式三：TRAE Skill（对话内触发）
 
@@ -78,10 +80,11 @@ Agent 会扫描三层 Skill 目录并在对话中渲染玻璃材质面板。
 
 ## 🛡️ TRAE 自启动守护（Watchdog）
 
-`watchdog.ps1` 是后台监控脚本：
+`watchdog.ps1` 是后台监控脚本（双向同步）：
 
 - 检测到 TRAE 进程启动 → **自动拉起** SkillHUD
 - SkillHUD 被用户关掉 → **守护模式**重新拉起
+- **TRAE 退出 → 自动关闭 SkillHUD**（反向同步，约 8 秒内）
 - 日志写到 `watchdog.log`，随时可查
 
 ### 加入开机自启
@@ -112,16 +115,19 @@ $s.Save()
 
 ```
 SkillHUD/
-├── main.js           Electron 主进程（窗口状态持久化、折叠、置顶）
-├── preload.js        IPC bridge（close / min / top / collapse）
-├── index.html        UI（设计 Token + SVG 图标 + try/catch 兜底）
+├── main.js           Electron 主进程（窗口状态持久化、折叠、置顶、主题底色）
+├── scanner.js        扫描本机三层 Skill 目录 + frontmatter 解析 + overlay 合并
+├── preload.js        IPC bridge（close / min / top / collapse / scan）
+├── index.html        UI（设计 Token + SVG 图标 + 真实数据渲染 + try/catch 兜底）
 ├── watchdog.ps1      TRAE 跟随启动守护脚本（UTF-8 BOM + 纯 ASCII）
-├── run-win.ps1       PowerShell/.NET 快速预览
+├── run-win.ps1       PowerShell/.NET 快速预览（旧内核，仅离线预览）
 ├── package.json      electron 依赖声明
 ├── SKILL.md          TRAE Skill 说明
 ├── skills.json       Skill overlay（图标 / 分类 / 触发词 / 贴士）
 └── LICENSE           MIT
 ```
+
+> **overlay 语义**：`skills.json` 只给「已扫描到的 skill」补充 `icon / category / prompts / tips`，不产生条目。扫描不到的条目放在 `suggested` 里，只在面板底部的「未安装 / 推荐」折叠区展示，不计入主清单数量。`description` 以 `SKILL.md` frontmatter 为准（优先取 `description_zh`），overlay 仅作兜底。
 
 ## 🎨 设计系统
 
@@ -139,17 +145,23 @@ SkillHUD/
 ```
 SkillHUD 启动
   ├─ main.js: 初始化 BrowserWindow → 加载 index.html
-  ├─ index.html: window.skillhud.send('...') ── IPC ──→ main.js 处理
+  │            ipcMain.handle('scan-skills') → scanner.scanSkills()
+  ├─ index.html: window.skillhud.scan() ── IPC(invoke) ──→ 返回真实清单
+  │            window.skillhud.send('theme'/'close-window'/...) ──→ main.js 处理
   │
-  │  TRAE Skill 模式:
-  │  └─ SKILL.md 指引 Agent 扫描三层目录:
-  │     · 项目级  .trae/skills/*/SKILL.md
-  │     · 插件级  .trae-cn/plugins/**/skills/*/SKILL.md（递归到版本号）
-  │     · 内置级  .trae-cn/builtin/global/skills/*/SKILL.md
+  │  scanner.js 扫描三层目录（后者覆盖前者：内置 < 插件 < 项目）:
+  │     · 内置级  ~/.trae-cn/builtin/global/skills/<name>/SKILL.md
+  │     · 插件级  ~/.trae-cn/plugins/**/skills/<name>/SKILL.md（递归到版本号）
+  │     · 项目级  <cwd>/.trae/skills/<name>/SKILL.md
+  │     解析 frontmatter(name/description) → 合并 skills.json overlay
   │
-  └─ Watchdog 守护:
-     · 检测 TRAE 进程 → 拉起 SkillHUD
+  │  TRAE Skill 模式（对话内）:
+  │  └─ SKILL.md 指引 Agent 走同样的三层扫描 + overlay 规则
+  │
+  └─ Watchdog 守护（双向）:
+     · 检测 TRAE 进程启动 → 拉起 SkillHUD
      · 检测 SkillHUD 窗口被关 → 守护重新拉起
+     · 检测 TRAE 退出 → 关闭 SkillHUD
 ```
 
 ## 📄 License

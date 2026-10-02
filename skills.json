@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "_comment": "Overlay：只能给已扫描到的 skill 补充 icon/category/prompts/tips；扫描不到的条目放 suggested。description 以 SKILL.md frontmatter 为准，这里仅作兜底。",
+  "_comment": "Overlay：只能给已扫描到的 skill 补充 icon/category/description/prompts/tips；扫描不到的条目放 suggested。description 以 SKILL.md frontmatter 为准，这里仅作兜底。icon 用图标名（见 index.html 的 ICON 表），不是 emoji。category 留空时由 scanner 按命名推断。",
   "skills": [
     {
       "name": "digital-avatar-creator",
-      "icon": "👤",
+      "icon": "avatar",
       "category": "创作",
       "description": "数字人形象/头像创建",
       "prompts": ["帮我创建一个数字人形象"],
@@ -12,7 +12,7 @@
     },
     {
       "name": "dynamic-ui",
-      "icon": "📊",
+      "icon": "chart",
       "category": "界面",
       "description": "生成动态 UI 图表和交互视觉元素",
       "prompts": ["画一个柱状图", "帮我做个流程图表", "生成动态 UI 组件"],
@@ -20,7 +20,7 @@
     },
     {
       "name": "skill-creator",
-      "icon": "🛠️",
+      "icon": "wrench",
       "category": "开发",
       "description": "创建新的 TRAE Skill",
       "prompts": ["帮我创建一个新 Skill", "我想加一个自定义技能"],
@@ -28,7 +28,7 @@
     },
     {
       "name": "TRAE-browseruse",
-      "icon": "🌐",
+      "icon": "globe",
       "category": "浏览器",
       "description": "使用 TRAE 内置浏览器进行网页操作",
       "prompts": ["打开浏览器访问 XXX"],
@@ -36,7 +36,7 @@
     },
     {
       "name": "TRAE-browseruse-external",
-      "icon": "🔗",
+      "icon": "link",
       "category": "浏览器",
       "description": "外部浏览器网页操作",
       "prompts": ["在浏览器上帮我做 XXX"],
@@ -44,17 +44,73 @@
     },
     {
       "name": "TRAE-code-mode-orchestrator",
-      "icon": "🎼",
+      "icon": "sparkle",
       "category": "开发",
       "description": "代码模式编排器",
       "prompts": ["帮我重构这段代码", "做代码评审"],
+      "tips": []
+    },
+    {
+      "name": "github",
+      "icon": "github",
+      "category": "GitHub",
+      "description": "浏览仓库 / PR / Issue，先摸清上下文再动手",
+      "prompts": ["看看这个仓库的 Issue", "总结这个 PR 改了什么"],
+      "tips": ["涉及具体 PR / CI / 评论操作时，会路由到下面三个子技能"]
+    },
+    {
+      "name": "gh-fix-ci",
+      "icon": "bug",
+      "category": "GitHub",
+      "description": "调试 GitHub Actions 失败的检查",
+      "prompts": ["CI 挂了帮我修"],
+      "tips": ["先用 gh 查 Actions 日志，再改代码"]
+    },
+    {
+      "name": "gh-address-comments",
+      "icon": "chat",
+      "category": "GitHub",
+      "description": "处理 PR review 中未解决的评论",
+      "prompts": ["这个 PR 有哪些未解决评论"],
+      "tips": []
+    },
+    {
+      "name": "yeet",
+      "icon": "rocket",
+      "category": "GitHub",
+      "description": "提交本地改动并开 draft PR",
+      "prompts": ["帮我开个 PR"],
+      "tips": ["会先确认改动范围再提交"]
+    },
+    {
+      "name": "full-link-stock-analysis",
+      "icon": "graph",
+      "category": "金融",
+      "description": "A 股 / 港股 / 美股全链路个股分析",
+      "prompts": ["看看某只股票的估值贵不贵", "帮我做个股研报"],
+      "tips": ["实时数据走金融数据源，取数标注来源与时效"]
+    },
+    {
+      "name": "ifind-finance-data",
+      "icon": "dollar",
+      "category": "金融",
+      "description": "同花顺 iFinD 金融数据查询",
+      "prompts": ["查询 GDP 增速", "查一下这只基金的净值"],
+      "tips": []
+    },
+    {
+      "name": "ppt-generator",
+      "icon": "screen",
+      "category": "演示",
+      "description": "从文档 / 链接 / 图片生成单文件 HTML 演示文稿",
+      "prompts": ["根据文档生成 PPT"],
       "tips": []
     }
   ],
   "suggested": [
     {
       "name": "申论范文",
-      "icon": "📝",
+      "icon": "doc",
       "category": "公考",
       "description": "公务员申论范文生成、点评与批改",
       "prompts": ["以乡村振兴为主题写申论范文"],
@@ -63,7 +119,7 @@
     },
     {
       "name": "公基速记",
-      "icon": "🧠",
+      "icon": "book",
       "category": "公考",
       "description": "公共基础知识快速记忆",
       "prompts": ["整理《行政复议法》核心考点"],
@@ -72,7 +128,7 @@
     },
     {
       "name": "时政热点",
-      "icon": "📰",
+      "icon": "book",
       "category": "公考",
       "description": "近期时政热点速览",
       "prompts": ["整理本周重要时政新闻"],
@@ -81,7 +137,7 @@
     },
     {
       "name": "公文写作",
-      "icon": "📄",
+      "icon": "doc",
       "category": "写作",
       "description": "党政机关公文规范写作",
       "prompts": ["写一份市政府通知"],
@@ -90,7 +146,7 @@
     },
     {
       "name": "结构化面试",
-      "icon": "🎤",
+      "icon": "chat",
       "category": "公考",
       "description": "面试模拟答题与点评",
       "prompts": ["模拟一道综合分析题"],
@@ -99,7 +155,7 @@
     },
     {
       "name": "代码解释",
-      "icon": "💻",
+      "icon": "wrench",
       "category": "开发",
       "description": "逐行解释代码逻辑",
       "prompts": ["逐行解释这段代码"],
@@ -108,7 +164,7 @@
     },
     {
       "name": "Bug 排查",
-      "icon": "🐛",
+      "icon": "bug",
       "category": "开发",
       "description": "快速定位修复代码问题",
       "prompts": ["这个报错是什么原因？"],
@@ -117,7 +173,7 @@
     },
     {
       "name": "会议纪要",
-      "icon": "📋",
+      "icon": "chat",
       "category": "效率",
       "description": "整理会议记录提取要点",
       "prompts": ["整理结构化会议纪要"],
@@ -126,7 +182,7 @@
     },
     {
       "name": "邮件助手",
-      "icon": "✉️",
+      "icon": "mail",
       "category": "效率",
       "description": "邮件撰写润色翻译",
       "prompts": ["帮我写一封请假邮件"],

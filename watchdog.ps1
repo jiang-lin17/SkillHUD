@@ -1,5 +1,7 @@
 ﻿<#
-  SkillHUD Watchdog - Follow TRAE auto-start daemon
+  SkillHUD Watchdog - Follow TRAE daemon (bidirectional)
+    - TRAE starts / HUD closed -> launch HUD
+    - TRAE exits               -> close HUD
 #>
 $ErrorActionPreference = "Continue"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -29,6 +31,15 @@ function Start-Hud {
     Log "    Start request sent"
   } catch {
     Log "    FAILED: $_"
+  }
+}
+function Stop-Hud {
+  $procs = @(Get-Process -Name "electron" -ErrorAction SilentlyContinue |
+    Where-Object { $_.MainWindowTitle -eq $HUD_TITLE })
+  if ($procs.Count -gt 0) {
+    Log ">>> Closing SkillHUD (TRAE exited)..."
+    $procs | Stop-Process -Force -ErrorAction SilentlyContinue
+    Log "    Closed $($procs.Count) process(es)"
   }
 }
 
@@ -67,6 +78,15 @@ while ($true) {
     Log "[GUARD] HUD was running but now closed -> relaunch"
     Start-Hud
     Start-Sleep 3
+  }
+
+  # Scenario D: TRAE just exited (was running, now gone) -> close HUD
+  if ($traeActive -and $traeNow -eq 0 -and $hudNow) {
+    Log "[STOP] TRAE exited -> close SkillHUD"
+    Stop-Hud
+    Start-Sleep 2
+    $hudNow = Is-HudOpen
+    $hudSeenRunning = $false
   }
 
   if ($hudNow) { $hudSeenRunning = $true }

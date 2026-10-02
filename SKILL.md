@@ -117,7 +117,9 @@ awk 'BEGIN{p=0} /^---$/{p++; next} p==1 && /:/{key=$1; sub(/:$/,"",key); val=sub
 
 ### 提取字段
 
-每个 SKILL.md 提取 `name` 和 `description`。用 `name` 做去重键（trim + 大小写不敏感归一化）。
+每个 SKILL.md 提取 `name` 和 `description`（若存在 `description_zh` 则优先用中文版）。用 `name` 做去重键（trim + 大小写不敏感归一化）。
+
+**只收 `.../skills/<name>/SKILL.md`**，排除 `skills/<name>/pages/<page>/SKILL.md` 这类更深的子文件，避免把插件内页当成独立 Skill。
 
 ### 去重 + 合并规则
 
