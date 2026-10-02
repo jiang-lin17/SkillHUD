@@ -1,10 +1,71 @@
-# 🎯 SkillHUD · Agent 技能抬头显示
+﻿# 🎯 SkillHUD — 围绕 TRAE 的 Skill 面板
 
-> 一个 TRAE Skill — 装上之后 Agent 就能自动扫描所有已安装的 Skill，以玻璃材质面板展示功能和用法。
+> 给 TRAE 装一个悬浮侧边栏，所有已安装的 Skill 的功能和调用方法，就在旁边、一目了然。
 
-## ✨ 是什么
+![status](https://img.shields.io/badge/TRAE-SOLO%20CN-blueviolet) ![os](https://img.shields.io/badge/OS-Windows-blue) ![electron](https://img.shields.io/badge/Electron-v33.4.11-47848F)
 
-SkillHUD **本身就是一个 TRAE Skill**。在 TRAE 里对 Agent 说：
+---
+
+## ✨ 解决什么问题
+
+在 TRAE 里装了一堆 Skill（Lark、企微、GitHub、金融、PPT 生成器…），但：
+
+- 不知道**装了哪些**、各自**能干什么**
+- 想用的时候找不到**正确的触发词**
+- 每次都得翻 SKILL.md 说明书
+
+SkillHUD 就是贴在 TRAE 边上的**独立悬浮窗**——打开 TRAE 它自动出现，点两下就能看到所有 Skill 的用法，点一下触发词复制到剪贴板。
+
+## 🖼️ 效果
+
+```
+┌─────────────────────────────────────┐
+│ 🔴🟡🟢  SkillHUD                   ← 可拖拽顶栏
+├─────────────────────────────────────┤
+│ 🔍 搜索 Skill 名称、描述或触发词…   │
+├─────────────────────────────────────┤
+│ [全部][开发][界面][浏览器][GitHub]  │ ← 分类 Tab
+├─────────────────────────────────────┤
+│ 🧩 ○ 只显示实用工具（隐藏飞书/企微）│ ← 平台型开关
+├─────────────────────────────────────┤
+│ 🛠️ skill-creator            ✅ 已装 │
+│    创建新 TRAE Skill                │
+│ 💬 帮我创建一个新 Skill   💬 我想…  │ ← 点触发词 = 复制
+├─────────────────────────────────────┤
+│ 🐙 github                    ✅ 已装 │
+│    浏览仓库 / PR / Issue             │
+├─────────────────────────────────────┤
+│ 📈 full-link-stock-analysis  ✅ 已装 │
+│    A 股 / 港股 / 美股个股分析        │
+├─────────────────────────────────────┤
+│ ● 守护运行中              显示 15/50│ ← 状态栏
+└─────────────────────────────────────┘
+        ↑ 悬浮在 TRAE 旁边，始终置顶
+```
+
+## 🚀 快速开始
+
+### 方式一：Electron 悬浮窗（推荐）
+
+```powershell
+cd SkillHUD
+npm install
+npm start
+```
+
+窗口默认贴在屏幕右侧中间，**自动置顶**在 TRAE 上方。关掉 TRAE 重开 → 窗口跟着回来（见下方"自启动"）。
+
+### 方式二：PowerShell 快速预览（没装 Electron 二进制时）
+
+```powershell
+powershell -ExecutionPolicy Bypass -File run-win.ps1
+```
+
+用 .NET WebBrowser 包装同一个 `index.html`，UI 完全一致。
+
+### 方式三：TRAE Skill（对话内触发）
+
+把 `SKILL.md` 和 `skills.json` 复制到 `.trae\skills\skillhud\`，在 TRAE 对话里说：
 
 ```
 skillhud
@@ -13,125 +74,84 @@ dynamic-ui 这个 Skill 怎么用
 有哪些开发类 Skill
 ```
 
-Agent 会：
-1. **自动扫描** 项目级 / 插件级 / 内置级 三层 Skill 目录
-2. **解析** 每个 SKILL.md 的 YAML frontmatter
-3. **合并** `skills.json` 里的 overlay（icon / category / prompts / tips）
-4. **渲染** 玻璃材质面板（分类分组 + 搜索 + 展开触发词/贴士）
+Agent 会扫描三层 Skill 目录并在对话中渲染玻璃材质面板。
 
-```
-┌─────────────────────────┐
-│ 🎯 SkillHUD              │  ← 玻璃材质面板
-│ 🔍 搜索 Skill…           │
-│ [全部][开发][界面][浏览器]│
-│                          │
-│ 🛠️ skill-creator   开发   │
-│    创建新 Skill…💬        │  ← 点卡片展开
-│ 💬 帮我创建一个新 Skill   │  ← 一键复制
-│                          │
-│ 📊 dynamic-ui      界面   │
-│    动态 UI 图表生成…      │
-└─────────────────────────┘
-```
+## 🛡️ TRAE 自启动守护（Watchdog）
 
-## 🚀 安装（就像装 Skill 一样）
+`watchdog.ps1` 是后台监控脚本：
 
-### Windows
+- 检测到 TRAE 进程启动 → **自动拉起** SkillHUD
+- SkillHUD 被用户关掉 → **守护模式**重新拉起
+- 日志写到 `watchdog.log`，随时可查
+
+### 加入开机自启
 
 ```powershell
-mkdir -Force .trae\skills
-git clone https://github.com/jiang-lin17/SkillHUD.git .trae\skills\skillhud
+$startup = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
+$shell = New-Object -ComObject WScript.Shell
+$s = $shell.CreateShortcut("$startup\SkillHUD-Watchdog.lnk")
+$s.TargetPath = "powershell.exe"
+$s.Arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$PWD\watchdog.ps1`""
+$s.WorkingDirectory = $PWD
+$s.Save()
 ```
 
-### macOS / Linux
+> ⚠️ PowerShell 5 写脚本需用 **UTF-8 BOM** 保存（否则中文路径会炸），且**不要用 emoji**（GBK 不识别）。
 
-```bash
-mkdir -p .trae/skills
-git clone https://github.com/jiang-lin17/SkillHUD.git .trae/skills/skillhud
-```
+### 手动控制
 
-### 验证
+| 操作 | 命令 |
+|------|------|
+| 立即启动 SkillHUD | `node_modules\electron\dist\electron.exe .` |
+| 手动跑 watchdog | `powershell -File watchdog.ps1` |
+| 看日志 | `Get-Content watchdog.log -Tail 20 -Wait` |
+| 结束 watchdog | 任务管理器杀 powershell.exe（命令行含 watchdog） |
+| 卸载自启 | 删启动文件夹里的 `SkillHUD-Watchdog.lnk` |
 
-在 TRAE 里对 Agent 说 `skillhud`，如果触发面板展示就装好了。
-
-## 📝 自定义：skills.json（Overlay 语义）
-
-`skills.json` 是一个 **overlay**，**只能给已扫描到的 skill 补充字段**。扫描不到的条目**不会**出现在主清单。
-
-```json
-{
-  "schemaVersion": 1,
-  "skills": [
-    {
-      "name": "dynamic-ui",
-      "icon": "📊",
-      "category": "界面",
-      "prompts": ["画一个柱状图", "帮我做个流程图表"],
-      "tips": ["支持 16+ 种图表模板"]
-    }
-  ],
-  "suggested": [
-    {
-      "name": "申论范文",
-      "icon": "📝",
-      "category": "公考",
-      "_reason": "当前未安装 — 可参考 skill-creator 自建"
-    }
-  ]
-}
-```
-
-### 字段说明
-
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `schemaVersion` | ✅ | 当前固定为 `1` |
-| `skills[]` | ✅ | overlay 条目，只对**扫描命中**的 name 生效 |
-| `suggested[]` | ❌ | 未安装/推荐条目，仅在「未安装」折叠区展示 |
-
-### description 归属
-
-**以 SKILL.md frontmatter 为准**。`skills.json` 里 `description` 仅作兜底（扫描失败时使用）。
-
-### 优先级
-
-**项目级 > 插件级 > 内置级**。同名 skill 后者被前者覆盖。
-
-## 🎨 独立预览（index.html）
-
-```bash
-python -m http.server 8080   # Windows / macOS / Linux 通用
-# 浏览器打开 http://localhost:8080
-```
-
-玻璃材质 + 紧凑侧边栏风格，纯 HTML + CSS + 原生 JS，零依赖。
-
-## 📂 目录结构
+## 📂 项目结构
 
 ```
 SkillHUD/
-├── SKILL.md       ⭐ TRAE Skill 核心 — Agent 读到这个就会触发
-├── skills.json    ⭐ overlay 配置（编辑这个补充触发词/分类）
-├── index.html     独立预览面板（玻璃材质）
-├── README.md
-├── LICENSE
-└── .gitignore
+├── main.js           Electron 主进程（窗口状态持久化、折叠、置顶）
+├── preload.js        IPC bridge（close / min / top / collapse）
+├── index.html        UI（设计 Token + SVG 图标 + try/catch 兜底）
+├── watchdog.ps1      TRAE 跟随启动守护脚本（UTF-8 BOM + 纯 ASCII）
+├── run-win.ps1       PowerShell/.NET 快速预览
+├── package.json      electron 依赖声明
+├── SKILL.md          TRAE Skill 说明
+├── skills.json       Skill overlay（图标 / 分类 / 触发词 / 贴士）
+└── LICENSE           MIT
 ```
 
-## 🛠️ 技术说明
+## 🎨 设计系统
 
-- **扫描逻辑**：SKILL.md 里的 Prompt Engineering 指令，告诉 Agent 用 PowerShell / find 递归扫描三层目录，解析每个 SKILL.md 的 YAML frontmatter
-- **路径跨平台**：Windows 用 `%USERPROFILE%` + PowerShell 内联函数，macOS/Linux 用 `~` + find
-- **frontmatter 解析**：读首个 `---` 到下一个 `---` 之间的全部行，支持带引号的值
-- **渲染**：主路径调用 `dynamic-ui` 的 PureShowWidget 渲染玻璃面板；降级路径输出 Markdown 清单
-- **零运行时依赖**：无 npm / 无构建工具
+| Token | 值 | 说明 |
+|-------|-----|------|
+| 强调色 | `#3D6BFF` | 按钮 / 选中态 / 聚焦 |
+| 成功色 | `#12A150` | 已安装徽章 |
+| 文本主 | `#16181D` | 深色 `#E8EAEE` |
+| 面板 | `#FFFFFF` | 深色 `#1B1E24` |
+| 圆角 | 14 / 10 / 8 / 999 | 容器 / 卡片 / 按钮 / chip |
+| 边框 | 1px solid `rgba(16,18,29,.08)` | 深色 `rgba(255,255,255,.08)` |
 
-## ⚠️ 已知约束
+## 🔍 工作原理
 
-- **自动读取已装 Skill** 受限于各 Agent 的 Skill 目录结构不同。SkillHUD 是 TRAE 专用，其他 Agent 不支持
-- **插件 Skill** 目录深度不一（`plugins/<plugin>/<version>/skills/<name>/SKILL.md`），必须递归扫描
-- **SKILL.md 自身不展示** — SkillHUD 是展示者不是被展示者
+```
+SkillHUD 启动
+  ├─ main.js: 初始化 BrowserWindow → 加载 index.html
+  ├─ index.html: window.skillhud.send('...') ── IPC ──→ main.js 处理
+  │
+  │  TRAE Skill 模式:
+  │  └─ SKILL.md 指引 Agent 扫描三层目录:
+  │     · 项目级  .trae/skills/*/SKILL.md
+  │     · 插件级  .trae-cn/plugins/**/skills/*/SKILL.md（递归到版本号）
+  │     · 内置级  .trae-cn/builtin/global/skills/*/SKILL.md
+  │
+  └─ Watchdog 守护:
+     · 检测 TRAE 进程 → 拉起 SkillHUD
+     · 检测 SkillHUD 窗口被关 → 守护重新拉起
+```
 
-## 📜 License
+## 📄 License
 
-MIT — 见 `LICENSE` 文件。
+MIT © 2026 jiang-lin17
