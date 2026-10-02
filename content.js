@@ -15,220 +15,238 @@
   const HUD_STYLES = `
   :host { all: initial; display: block; }
 
-  /* 浮动按钮（收起态） */
+  /* 浮动按钮（收起态 — 玻璃材质小胶囊） */
   .sh-fab {
-    position: fixed;
-    right: 0;
-    top: 50%;
+    position: fixed; right: 4px; top: 50%;
     transform: translateY(-50%);
     z-index: 2147483646;
-    width: 32px;
-    height: 72px;
-    background: linear-gradient(135deg, #3370ff, #7b61ff);
-    border-radius: 8px 0 0 8px;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    writing-mode: vertical-rl;
-    text-orientation: upright;
-    letter-spacing: 2px;
+    width: 36px; height: 90px;
+    background: rgba(255,255,255,0.45);
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    border-radius: 12px;
+    color: #1d2129;
+    font-size: 11px; font-weight: 600;
+    writing-mode: vertical-rl; text-orientation: upright;
+    letter-spacing: 3px;
     cursor: pointer;
-    box-shadow: -2px 0 12px rgba(51,112,255,0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s, right 0.2s;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(255,255,255,0.6) inset;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.25s cubic-bezier(.2,.8,.2,1), background 0.2s;
     user-select: none;
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
   }
-  .sh-fab:hover { transform: translateY(-50%) translateX(-4px); }
-  .sh-fab .sh-dot {
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 6px; height: 6px;
-    background: #fff;
-    border-radius: 50%;
-    opacity: 0.6;
+  .sh-fab:hover { transform: translateY(-50%) translateX(-6px); background: rgba(255,255,255,0.65); }
+  .sh-fab::before {
+    content: "🎯"; position: absolute; top: 8px;
+    font-size: 14px; writing-mode: horizontal-tb;
   }
 
-  /* 展开面板 */
+  /* 展开面板 — 玻璃材质 */
   .sh-panel {
-    position: fixed;
-    top: 50%;
+    position: fixed; top: 50%;
     transform: translateY(-50%);
     z-index: 2147483647;
-    width: 280px;
-    max-height: 85vh;
-    background: #ffffff;
-    border-radius: 12px 0 0 12px;
-    box-shadow: -4px 0 24px rgba(0,0,0,0.15);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    width: 260px; max-height: 82vh;
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border-radius: 16px 0 0 16px;
+    box-shadow: -8px 8px 32px rgba(0,0,0,0.12), -1px 0 0 rgba(255,255,255,0.6) inset;
+    display: flex; flex-direction: column; overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-    font-size: 13px;
-    color: #1d2129;
-    border-left: 1px solid #e3e6ed;
+    font-size: 13px; color: #1d2129;
+    animation: shSlideIn 0.35s cubic-bezier(.2,.8,.2,1);
   }
-  .sh-panel[data-pos="right"] { right: 0; border-radius: 12px 0 0 12px; border-left: 1px solid #e3e6ed; }
-  .sh-panel[data-pos="left"] { left: 0; border-radius: 0 12px 12px 0; border-left: none; border-right: 1px solid #e3e6ed; }
-  .sh-panel[data-pos="left"] .sh-caret { transform: rotate(180deg); }
+  @keyframes shSlideIn {
+    from { transform: translateY(-50%) translateX(24px); opacity: 0; }
+    to   { transform: translateY(-50%) translateX(0); opacity: 1; }
+  }
 
-  /* 暗色主题 */
-  .sh-panel.dark {
-    background: #1f2329;
-    color: #e5e6eb;
-    border-color: #2f343d;
-    box-shadow: -4px 0 24px rgba(0,0,0,0.5);
-  }
+  .sh-panel[data-pos="right"] { right: 0; border-radius: 16px 0 0 16px; }
+  .sh-panel[data-pos="left"]  { left: 0; border-radius: 0 16px 16px 0; }
+
+  /* 暗色玻璃 */
+  .sh-panel.dark,
   .sh-panel.dark .sh-head,
-  .sh-panel.dark .sh-foot { background: #1f2329; border-color: #2f343d; }
-  .sh-panel.dark .sh-srch { background: #262b33; border-color: #2f343d; color: #e5e6eb; }
-  .sh-panel.dark .sh-tab { background: #262b33; color: #c9cdd4; border-color: #2f343d; }
-  .sh-panel.dark .sh-tab.on { background: #4080ff; border-color: #4080ff; color: #fff; }
-  .sh-panel.dark .sh-card { background: #262b33; border-color: #2f343d; }
-  .sh-panel.dark .sh-card:hover { border-color: #4080ff; }
-  .sh-panel.dark .sh-hint { background: #14171d; color: #86909c; }
-  .sh-panel.dark .sh-detail { background: #14171d; }
-  .sh-panel.dark .sh-prompt { background: #262b33; border-color: #2f343d; }
-  .sh-panel.dark .sh-empty { color: #86909c; }
+  .sh-panel.dark .sh-foot {
+    background: rgba(25,27,33,0.65);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    color: #e5e6eb;
+    box-shadow: -8px 8px 32px rgba(0,0,0,0.4);
+  }
+  .sh-panel.dark .sh-head { border-bottom-color: rgba(255,255,255,0.08); }
+  .sh-panel.dark .sh-foot { border-top-color: rgba(255,255,255,0.08); }
+  .sh-panel.dark .sh-srch { background: rgba(255,255,255,0.08); color: #e5e6eb; }
+  .sh-panel.dark .sh-srch::placeholder { color: rgba(255,255,255,0.4); }
+  .sh-panel.dark .sh-tab { background: rgba(255,255,255,0.08); color: #c9cdd4; }
+  .sh-panel.dark .sh-tab.on { background: linear-gradient(135deg, #4080ff, #7b61ff); color: #fff; }
+  .sh-panel.dark .sh-card { background: rgba(255,255,255,0.06); border-color: transparent; }
+  .sh-panel.dark .sh-card:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.1); }
+  .sh-panel.dark .sh-card.open { background: rgba(255,255,255,0.1); border-color: #7b61ff; }
+  .sh-panel.dark .sh-prompt { background: rgba(255,255,255,0.06); }
+  .sh-panel.dark .sh-btn { color: rgba(255,255,255,0.6); }
+  .sh-panel.dark .sh-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
   /* 面板头部 */
   .sh-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px 8px;
-    border-bottom: 1px solid #e3e6ed;
-    background: #ffffff;
-    flex-shrink: 0;
-    cursor: move;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    background: rgba(255,255,255,0.35);
+    flex-shrink: 0; cursor: move;
   }
-  .sh-title { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; }
+  .sh-title { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; letter-spacing: -0.2px; }
   .sh-logo { font-size: 16px; }
-  .sh-actions { display: flex; gap: 4px; }
+  .sh-title > span:last-child { background: linear-gradient(135deg, #3370ff, #7b61ff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .sh-actions { display: flex; gap: 2px; }
   .sh-btn {
-    width: 22px; height: 22px;
+    width: 24px; height: 24px;
     border: none; background: transparent;
-    border-radius: 4px; cursor: pointer;
+    border-radius: 6px; cursor: pointer;
     font-size: 12px; line-height: 1;
     color: #86909c; display: flex;
     align-items: center; justify-content: center;
+    transition: 0.15s;
   }
-  .sh-btn:hover { background: #f1f3f7; color: #1d2129; }
+  .sh-btn:hover { background: rgba(0,0,0,0.06); color: #1d2129; }
 
   /* 搜索 */
-  .sh-srch-wrap { padding: 8px 12px; flex-shrink: 0; }
+  .sh-srch-wrap { padding: 8px 14px; flex-shrink: 0; position: relative; }
   .sh-srch {
-    width: 100%; padding: 7px 10px 7px 28px;
-    font-size: 12px; background: #f1f3f7;
-    border: 1px solid transparent; border-radius: 8px;
-    outline: none; color: inherit;
-    font-family: inherit;
+    width: 100%; padding: 8px 10px 8px 30px;
+    font-size: 12px; background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 10px;
+    outline: none; color: inherit; font-family: inherit;
+    transition: 0.15s;
+    backdrop-filter: blur(8px);
   }
-  .sh-srch:focus { border-color: #3370ff; background: #fff; }
-  .sh-srch-wrap { position: relative; }
+  .sh-srch:focus { border-color: #3370ff; background: rgba(255,255,255,0.8); box-shadow: 0 0 0 3px rgba(51,112,255,0.15); }
   .sh-srch-wrap::before {
-    content: "🔍"; position: absolute; left: 20px; top: 50%;
+    content: "🔍"; position: absolute; left: 22px; top: 50%;
     transform: translateY(-50%); font-size: 11px; opacity: 0.5; pointer-events: none;
   }
 
   /* 分类 tabs */
   .sh-tabs {
-    display: flex; gap: 4px; padding: 0 12px 8px;
-    overflow-x: auto; flex-shrink: 0;
-    scrollbar-width: none;
+    display: flex; gap: 4px; padding: 0 14px 8px;
+    overflow-x: auto; flex-shrink: 0; scrollbar-width: none;
   }
   .sh-tabs::-webkit-scrollbar { display: none; }
   .sh-tab {
     padding: 4px 10px; font-size: 11px; white-space: nowrap;
-    background: #f1f3f7; border: 1px solid transparent;
+    background: rgba(0,0,0,0.04); border: none;
     border-radius: 12px; cursor: pointer;
     color: #4e5969; transition: 0.15s; flex-shrink: 0;
   }
-  .sh-tab:hover { background: #e8f3ff; }
-  .sh-tab.on { background: #3370ff; color: #fff; border-color: #3370ff; }
+  .sh-tab:hover { background: rgba(51,112,255,0.1); }
+  .sh-tab.on { background: linear-gradient(135deg, #3370ff, #7b61ff); color: #fff; }
 
   /* 列表 */
   .sh-list {
-    flex: 1; overflow-y: auto; padding: 0 12px 12px;
-    scrollbar-width: thin;
+    flex: 1; overflow-y: auto; padding: 0 14px 12px; scrollbar-width: thin;
   }
   .sh-list::-webkit-scrollbar { width: 4px; }
-  .sh-list::-webkit-scrollbar-thumb { background: #e3e6ed; border-radius: 2px; }
+  .sh-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
 
   /* 分组标题 */
   .sh-grp {
     font-size: 10px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.5px;
-    color: #86909c; margin: 14px 2px 6px;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    color: rgba(0,0,0,0.4); margin: 16px 2px 6px;
   }
+  .sh-panel.dark .sh-grp { color: rgba(255,255,255,0.4); }
   .sh-grp:first-child { margin-top: 4px; }
 
-  /* Skill 卡片 */
+  /* Skill 卡片 — 玻璃质感 */
   .sh-card {
-    background: #f8f9fb; border: 1px solid transparent;
-    border-radius: 8px; padding: 10px; margin-bottom: 6px;
-    cursor: pointer; transition: 0.15s;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(0,0,0,0.04);
+    border-radius: 10px; padding: 10px 11px; margin-bottom: 6px;
+    cursor: pointer; transition: 0.2s cubic-bezier(.2,.8,.2,1);
+    backdrop-filter: blur(12px);
   }
-  .sh-card:hover { border-color: #3370ff; background: #ffffff; }
-  .sh-card.open { background: #ffffff; border-color: #3370ff; }
+  .sh-card:hover {
+    transform: translateX(-2px);
+    background: rgba(255,255,255,0.75);
+    box-shadow: -4px 4px 16px rgba(51,112,255,0.12);
+    border-color: rgba(51,112,255,0.3);
+  }
+  .sh-card.open {
+    background: rgba(255,255,255,0.85);
+    border-color: rgba(51,112,255,0.4);
+    box-shadow: 0 4px 20px rgba(51,112,255,0.15);
+  }
 
   .sh-card-top { display: flex; align-items: center; gap: 8px; }
-  .sh-ic { font-size: 16px; width: 22px; text-align: center; }
+  .sh-ic {
+    font-size: 16px; width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(51,112,255,0.12);
+    border-radius: 6px; flex-shrink: 0;
+  }
   .sh-nm { flex: 1; font-weight: 600; font-size: 12.5px; }
   .sh-bd {
-    font-size: 9px; padding: 1px 5px;
-    background: #f1f3f7; color: #86909c;
-    border-radius: 3px; font-weight: 400;
+    font-size: 9px; padding: 2px 6px;
+    background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.5);
+    border-radius: 4px; font-weight: 500;
   }
   .sh-ds {
-    font-size: 11.5px; color: #86909c;
-    margin-top: 4px; line-height: 1.4;
+    font-size: 11.5px; color: rgba(0,0,0,0.55);
+    margin-top: 5px; line-height: 1.45;
     display: -webkit-box; -webkit-line-clamp: 2;
     -webkit-box-orient: vertical; overflow: hidden;
   }
+  .sh-panel.dark .sh-ic { background: rgba(123,97,255,0.25); }
+  .sh-panel.dark .sh-bd { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.55); }
+  .sh-panel.dark .sh-ds { color: rgba(255,255,255,0.55); }
 
   /* 展开详情 */
   .sh-detail {
     margin-top: 8px; padding-top: 8px;
-    border-top: 1px dashed #e3e6ed;
+    border-top: 1px dashed rgba(0,0,0,0.1);
     display: none;
   }
   .sh-card.open .sh-detail { display: block; }
-  .sh-sec { font-size: 10px; font-weight: 600; color: #86909c; margin: 6px 0 3px; }
+  .sh-sec { font-size: 10px; font-weight: 600; color: rgba(0,0,0,0.5); margin: 6px 0 4px; }
+  .sh-panel.dark .sh-sec { color: rgba(255,255,255,0.5); }
   .sh-sec:first-child { margin-top: 0; }
 
   .sh-prompt {
-    position: relative; padding: 6px 32px 6px 8px;
-    background: #f1f3f7; border: 1px solid transparent;
-    border-radius: 5px; font-size: 11px; line-height: 1.45;
+    position: relative; padding: 7px 30px 7px 10px;
+    background: rgba(51,112,255,0.06);
+    border: 1px solid rgba(51,112,255,0.12);
+    border-radius: 6px; font-size: 11px; line-height: 1.45;
     margin-bottom: 4px; cursor: pointer;
     font-family: "SF Mono", Consolas, monospace;
     transition: 0.15s; word-break: break-all;
   }
-  .sh-prompt:hover { border-color: #3370ff; }
+  .sh-prompt:hover { background: rgba(51,112,255,0.12); border-color: rgba(51,112,255,0.3); }
   .sh-prompt:hover .sh-cp { opacity: 1; }
   .sh-cp {
     position: absolute; top: 4px; right: 4px;
-    width: 18px; height: 18px; border: none;
-    background: #fff; border-radius: 3px;
+    width: 20px; height: 20px; border: none;
+    background: rgba(255,255,255,0.9); border-radius: 4px;
     cursor: pointer; font-size: 10px;
     opacity: 0; transition: 0.15s;
     display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   }
-  .sh-tip { font-size: 11px; color: #86909c; padding-left: 12px; position: relative; line-height: 1.4; }
+  .sh-tip {
+    font-size: 11px; color: rgba(0,0,0,0.5);
+    padding-left: 12px; position: relative; line-height: 1.4;
+  }
   .sh-tip::before { content: "💡"; position: absolute; left: 0; font-size: 9px; top: 1px; }
 
-  .sh-empty { padding: 40px 10px; text-align: center; color: #c9cdd4; font-size: 12px; }
-  .sh-empty-e { font-size: 28px; opacity: 0.4; margin-bottom: 6px; }
+  .sh-empty { padding: 40px 10px; text-align: center; color: rgba(0,0,0,0.3); font-size: 12px; }
+  .sh-empty-e { font-size: 28px; opacity: 0.5; margin-bottom: 6px; }
 
   /* 底部 */
   .sh-foot {
-    padding: 6px 12px; border-top: 1px solid #e3e6ed;
-    background: #ffffff; font-size: 10px; color: #86909c;
+    padding: 7px 14px; border-top: 1px solid rgba(0,0,0,0.06);
+    background: rgba(255,255,255,0.3); font-size: 10px; color: rgba(0,0,0,0.45);
     flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;
   }
   .sh-foot a { color: #3370ff; text-decoration: none; }
@@ -238,9 +256,13 @@
   .sh-toast {
     position: fixed; bottom: 32px; left: 50%;
     transform: translateX(-50%);
-    padding: 8px 16px; background: #1d2129; color: #fff;
-    border-radius: 8px; font-size: 12px;
-    z-index: 2147483647; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    padding: 9px 18px;
+    background: rgba(29,33,41,0.9);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: #fff; border-radius: 10px; font-size: 12px;
+    z-index: 2147483647;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.25);
     animation: shToast 1.5s ease forwards;
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
   }
@@ -331,12 +353,20 @@
 
   function applySavedState() {
     try {
-      const saved = JSON.parse(localStorage.getItem("skillhud_state") || "{}");
-      if (saved.panelPos) state.panelPos = saved.panelPos;
-      if (saved.theme) state.theme = saved.theme;
-      if (saved.posX != null) state.posX = saved.posX;
-      state.panelOpen = !!saved.panelOpen;
-    } catch {}
+      const saved = JSON.parse(localStorage.getItem("skillhud_state") || "null");
+      if (saved) {
+        if (saved.panelPos) state.panelPos = saved.panelPos;
+        if (saved.theme) state.theme = saved.theme;
+        if (saved.posX != null) state.posX = saved.posX;
+        // 用户明确设置过就用用户的
+        state.panelOpen = saved.panelOpen !== false;
+      } else {
+        // 首次访问：自动展开面板
+        state.panelOpen = true;
+      }
+    } catch {
+      state.panelOpen = true;
+    }
   }
 
   function saveState() {
