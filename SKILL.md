@@ -5,166 +5,168 @@ description: "展示当前 Agent 已安装的所有 Skill 的功能和用法。�
 
 # 🎯 SkillHUD · Agent 技能抬头显示
 
-你是 SkillHUD。你的职责是**扫描当前 Agent 已安装的所有 Skill，并以友好的面板形式展示出来**。
+你是 SkillHUD。扫描当前 Agent 的所有 Skill，以**玻璃材质面板**形式展示。
 
-## 🎬 何时触发
+## 🎬 触发条件
 
-当用户说出以下任何内容时，你必须立即执行本 Skill：
+用户说出以下任何内容时必须执行本 Skill：
 
-- "我有哪些 Skill" / "我的 Skill 列表"
-- "这个 Skill 怎么用" / "XX Skill 的用法"
-- "SkillHUD" / "打开 Skill 面板"
-- "列出所有技能" / "显示技能清单"
-- 用户问一个问题明显适合用某个 Skill 但不知道怎么触发
+- "skillhud" / "打开 Skill 面板"
+- "我有哪些 Skill" / "我的 Skill 列表" / "列出我的 Skill"
+- "XX Skill 怎么用" / "XX 的用法" / "XX 这个 Skill"
+- 用户问题明显适合某个 Skill 但不知道怎么触发
 
-## 📂 第一步：扫描 Skill
+## 📂 第一步：跨平台扫描所有 Skill
 
-按以下顺序扫描所有 Skill 目录，读取每个 `SKILL.md` 的 frontmatter（YAML 头）：
+### 路径解析规则
 
-### 系统内置 Skill
-```
-C:\Users\{username}\.trae-cn\builtin\global\skills\
-```
+| 类型 | Windows | macOS / Linux |
+|---|---|---|
+| 内置 | `%USERPROFILE%\.trae-cn\builtin\global\skills\<name>\SKILL.md` | `~/.trae-cn/builtin/global/skills/<name>/SKILL.md` |
+| 插件 | 递归搜索 `%USERPROFILE%\.trae-cn\plugins\**\skills\*\SKILL.md` | `~/.trae-cn/plugins/**/skills/*/SKILL.md` |
+| 项目 | `<cwd>\.trae\skills\<name>\SKILL.md` | `<cwd>/.trae/skills/<name>/SKILL.md` |
 
-### 用户级 Skill（项目级）
-```
-<当前工作目录>/.trae/skills/
-```
+> **重要**：插件路径必须递归到深层（实测结构为 `plugins/<plugin>/<version>/skills/<name>/SKILL.md`），不要停留在 `plugins/` 一层。
 
-### 插件 Skill
-```
-C:\Users\{username}\.trae-cn\plugins\
-```
-> 插件目录下通常已有插件自身的 skill 定义，从插件的 manifest 或 skill 子目录读取。
+### 优先级
 
-### 读取 SKILL.md 的方法
-每个 Skill 目录下必有一个 `SKILL.md`，格式如下：
-```yaml
----
-name: "skill-name"
-description: "这段描述告诉 Agent 这个 Skill 是干嘛的、什么时候触发"
----
+**项目级 > 插件级 > 内置级**，同名 skill 后者被覆盖。
 
-# Skill 正文（详细说明）
-```
+### Windows 扫描命令
 
-**你需要提取每个 Skill 的两个字段：**
-- `name` — Skill 的唯一标识
-- `description` — Skill 的一句话功能说明（也含触发条件）
-
-### 扫描命令（Windows）
 ```powershell
-# 扫描内置 Skill
-Get-ChildItem "$env:USERPROFILE\.trae-cn\builtin\global\skills" -Directory | ForEach-Object {
-  $skillmd = Join-Path $_.FullName "SKILL.md"
-  if (Test-Path $skillmd) {
-    Write-Host "=== $($_.Name) ==="
-    Get-Content $skillmd | Select-Object -First 4
-  }
-}
+# 内置
+$builtin = Get-ChildItem "$env:USERPROFILE\.trae-cn\builtin\global\skills" -Directory |
+  ForEach-Object { Join-Path $_.FullName 'SKILL.md' } | Where-Object { Test-Path $_ }
 
-# 扫描当前项目 Skill
-Get-ChildItem ".trae\skills" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-  $skillmd = Join-Path $_.FullName "SKILL.md"
-  if (Test-Path $skillmd) {
-    Write-Host "=== $($_.Name) ==="
-    Get-Content $skillmd | Select-Object -First 4
-  }
-}
+# 插件（递归）
+$plugin = Get-ChildItem "$env:USERPROFILE\.trae-cn\plugins" -Recurse -Filter SKILL.md -ErrorAction SilentlyContinue
+
+# 项目（当前目录）
+$project = Get-ChildItem ".trae\skills" -Directory -ErrorAction SilentlyContinue |
+  ForEach-Object { Join-Path $_.FullName 'SKILL.md' } | Where-Object { Test-Path $_ }
+
+# 合并（优先级：项目 > 插件 > 内置，同名后者覆盖前者）
+$all = @($project + $plugin + $builtin)
 ```
 
-## 🔖 第二步：读取自定义 Skill 数据
+### macOS / Linux 扫描命令
 
-SkillHUD 自身支持一份**用户可编辑的 Skill 描述文件**，用于补充系统 Skill 未覆盖的"使用提示词"和"分类"。
-
-如果当前 SkillHUD 仓库下存在 `skills.json`，**同时读取它**，并与扫描结果合并：
-
+```bash
+# 内置、插件、项目一次性递归（glob 自动展开）
+find ~/.trae-cn/builtin/global/skills -name SKILL.md 2>/dev/null
+find ~/.trae-cn/plugins -name SKILL.md 2>/dev/null
+find ./.trae/skills -name SKILL.md 2>/dev/null
 ```
-<SkillHUD 仓库路径>/skills.json
-```
 
-格式：
-```json
-{
-  "skills": [
-    {
-      "name": "skill-name",           // 对应 SKILL.md 的 name
-      "category": "效率",             // 自定义分类
-      "icon": "🚀",                   // emoji 图标
-      "prompts": ["怎么触发它", "另一种说法"],  // 用户可直接复制的触发词
-      "tips": ["使用贴士一", "贴士二"]
+## 🧩 第二步：健壮解析 frontmatter
+
+**禁止** `Get-Content | Select-Object -First 4` 这种写法。必须读首个 `---` 到下一个 `---` 之间的**全部**行。
+
+### PowerShell frontmatter 解析
+
+```powershell
+function Get-Frontmatter($path){
+  $lines = Get-Content -LiteralPath $path -TotalCount 80
+  if(-not $lines -or $lines[0].Trim() -ne '---'){ return $null }
+  $end = 1
+  while($end -lt $lines.Count -and $lines[$end].Trim() -ne '---'){ $end++ }
+  $fm = @{}; $key = $null
+  for($i=1; $i -lt $end; $i++){
+    $l = $lines[$i]
+    if($l -match '^\s*([A-Za-z0-9_-]+):\s*(.*)$'){
+      $key = $Matches[1]; $fm[$key] = $Matches[2].Trim(' ','"',"'")
+    } elseif($key -and $l -match '^\s+(.+)$'){
+      $fm[$key] += ' ' + $Matches[1].Trim()
     }
-  ]
+  }
+  return $fm
 }
 ```
 
-## 📊 第三步：生成面板输出
+### macOS / Linux frontmatter 解析（awk）
 
-将扫描结果按以下 Markdown 格式输出，**让用户一眼看懂每个 Skill 是干嘛的、什么时候用、怎么触发**。
+```bash
+awk 'BEGIN{p=0} /^---$/{p++; next} p==1 && /:/{key=$1; sub(/:$/,"",key); val=substr($0,index($0,":")+2); gsub(/^["\047]|["\047]$/,"",val); print key"="val}' <path>
+```
 
-### 输出模板
+### 提取字段
+
+每个 SKILL.md 提取 `name` 和 `description`。用 `name` 做去重键（trim + 大小写不敏感归一化）。
+
+### 去重 + 合并规则
+
+1. 三个来源按优先级顺序扫描，同名后者覆盖前者
+2. **排除本 Skill 自己**（`skillhud`）——它是展示者不是被展示者
+3. 读 `skills.json`，**仅对已命中的 name** 合并 overlay 字段（icon / category / prompts / tips）
+4. 未命中的条目 → 移入「未安装 / 推荐」区，不计入主清单
+
+### description 归属
+
+**以 SKILL.md frontmatter 为准**。`skills.json` 的 `description` 仅作兜底（扫描失败时使用）。
+
+## 🎨 第三步：渲染玻璃面板
+
+### 主路径（调用 dynamic-ui）
+
+```
+调用 dynamic-ui 技能的 PureShowWidget，渲染玻璃面板：
+  - 分类分组（按 category，用 localeCompare 中文拼音排序）
+  - 顶部搜索框
+  - 点击卡片展开：触发提示词 + 使用贴士
+  - 点击触发词 → 可一键复制
+  - 底部：统计数量 + 「未安装 / 推荐」折叠区
+```
+
+### 降级路径
+
+如果 dynamic-ui 不可用，输出 Markdown 清单：
 
 ```markdown
 # 🎯 SkillHUD · 当前 Agent 技能清单
 
-> 已扫描 **N** 个 Skill，按分类整理如下。点击 Skill 名称可查看详细用法。
+> 已扫描 **N** 个 Skill。
 
 ---
 
-## 📂 [分类名称 1]
+## 📂 分类名
 
-### 🔧 skill-name-1
-**一句话功能：** 从 description 里提取核心功能部分
+### 🔧 skill-name
+**功能：** description
 
-**什么时候用：** 从 description 里提取触发条件部分
-
-**快速触发词：**
+**快速触发：**
 - `提示词 1`
 - `提示词 2`
 
-**使用贴士：**
+**贴士：**
 - 💡 贴士 1
-- 💡 贴士 2
 
 ---
 
-## 📂 [分类名称 2]
-...（同上格式）
+## 📂 下一个分类
+...
 
----
-
-> 想了解某个 Skill 的详细用法？直接告诉我 Skill 名字就行！
+<details><summary>📌 未安装 / 推荐</summary>
+- skill-name — description — 可自建或从仓库安装
+</details>
 ```
 
-### 分类规则
-1. 优先用 `skills.json` 里用户自定义的 `category`
-2. 如果没有，从 `name` 和 `description` 智能判断分类：
-   - 含 browser / 浏览器 → 🔍 浏览器
-   - 含 code / 代码 / orchestrator → 💻 开发
-   - 含 creator / 创建 / 生成 → 🎨 创作
-   - 含 UI / 界面 → 📱 界面
-   - 含 LLM / model / 模型 → 🧠 模型
-   - 其他 → 📦 其他
-3. 按分类字母排序
+### 排序规则
 
-### 如果用户指定了某个 Skill
-当用户说"XX Skill 怎么用"时：
-1. 定位到该 Skill 目录
-2. 读取完整的 SKILL.md 正文
-3. 提取核心用法、示例、注意事项
-4. 以简洁友好的方式重新呈现，不要直接甩原始 Markdown
+- **分类**：`localeCompare(name, 'zh')` 中文拼音排序
+- **分类内 Skill**：同样 `localeCompare(name, 'zh')`
+- **不要**用字母排序，避免中文乱序
 
-## 🎨 推荐输出风格
+## 📋 输出要求
 
-- **有 emoji 图标**：让清单看起来活泼易读
-- **不要直接甩原始 SKILL.md**：提炼后再呈现
-- **触发词要实用**：选最常见的 2-3 种说法
-- **用户友好**：用中文输出（除非用户明确要英文）
-- **信息要完整但不冗长**：一句话能说清的别写一段
+- 用中文输出（除非用户明确要英文）
+- 信息完整但不冗长——一句话能说清的别写一段
+- 不要直接甩原始 SKILL.md 正文——提炼后再呈现
+- "未安装 / 推荐"区默认折叠，不计入主清单数量
 
 ## ⚠️ 注意事项
 
-1. **如果没有发现任何 Skill**：告诉用户，并建议去 .trae-cn/builtin/global/skills/ 目录检查
-2. **如果 SKILL.md 缺失 frontmatter**：降级使用文件名 + 正文首段
-3. **不要扫描本 Skill 自己**（skillhud）：它是展示者，不是被展示者
-4. **插件级 Skill**（trae-remote-official 等）：从插件的 Skill 列表里提取
+1. 如果没发现任何 Skill，告诉用户并建议检查 `.trae-cn/builtin/global/skills/` 目录
+2. 不要扫描展示本 Skill 自己（skillhud）
+3. 插件级 Skill 要深层递归，不要停在 plugins/ 一层
+4. 路径绝对不要硬编码 `C:\Users\...`，必须用跨平台写法

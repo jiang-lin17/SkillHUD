@@ -204,7 +204,7 @@ body {
     <div class="head">
       <div class="title"><span>🎯</span><span>SkillHUD</span></div>
       <div class="btns">
-        <button onclick="document.documentElement.toggleAttribute('data-theme','dark'); this.textContent = this.textContent==='🌓'?'☀️':'🌓'">🌓</button>
+        <button id="themeBtn" aria-label="切换浅暗主题" title="切换主题">🌓</button>
       </div>
     </div>
     <div class="srch-wrap">
@@ -234,7 +234,7 @@ let skills = [], activeCat = "all", openCards = new Set();
 })();
 
 function buildTabs(){
-  const cats = [...new Set(skills.map(s=>s.category||'其他'))].sort();
+  const cats = [...new Set(skills.map(s=>s.category||'其他'))].sort((a,b)=>a.localeCompare(b,'zh'));
   document.getElementById('tabs').innerHTML =
     `<button class="tab on" data-cat="all">全部 ${skills.length}</button>` +
     cats.map(c=>`<button class="tab" data-cat="${c}">${c} ${skills.filter(s=>s.category===c).length}</button>`).join('');
@@ -263,9 +263,9 @@ function render(){
   const groups = {};
   filtered.forEach(s=>((groups[s.category||'其他']=groups[s.category||'其他']||[]).push(s)));
   let html='';
-  Object.keys(groups).sort().forEach(cat=>{
+  Object.keys(groups).sort((a,b)=>a.localeCompare(b,'zh')).forEach(cat=>{
     html += `<div class="grp">${esc(cat)}</div>`;
-    groups[cat].forEach(s=>html += card(s));
+    groups[cat].sort((a,b)=>a.name.localeCompare(b.name,'zh')).forEach(s=>html += card(s));
   });
   document.getElementById('list').innerHTML = html;
   document.getElementById('stat').textContent = skills.length+' 个已装';
@@ -288,7 +288,7 @@ function card(s){
   const open = openCards.has(s.name);
   const prompts = (s.prompts||[]).map(p=>`<div class="prompt" data-text="${escAttr(p)}">💬 ${esc(p)}<button class="cp" title="复制">📋</button></div>`).join('');
   const tips = (s.tips||[]).map(t=>`<div class="tip">${esc(t)}</div>`).join('');
-  return `<div class="card ${open?'open':''}" data-name="${escAttr(s.name)}">
+  return `<div class="card ${open?'open':''}" data-name="${escAttr(s.name)}" tabindex="0" role="button" aria-label="Skill: ${esc(s.name)} — ${esc(s.description||'')}">
     <div class="card-top">
       <div class="ic">${s.icon||'⚡'}</div>
       <div class="nm">${esc(s.name)}</div>
@@ -302,7 +302,7 @@ function card(s){
 }
 
 function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);}
-function escAttr(s){return String(s).replace(/"/g,'&quot;');}
+function escAttr(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);}
 async function copy(t){
   try { await navigator.clipboard.writeText(t); toast('✅ 已复制'); }
   catch{ const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✅ 已复制'); }
@@ -317,15 +317,32 @@ function toast(msg){
 }
 document.getElementById('srch').oninput=render;
 
-// 内置兜底数据
+// 暗色主题切换（工单 3.1：修复只能加不能减的 bug）
+const themeBtn = document.getElementById('themeBtn');
+themeBtn.addEventListener('click', function(){
+  const r = document.documentElement;
+  const isDark = r.getAttribute('data-theme') === 'dark';
+  r.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  this.textContent = isDark ? '🌓' : '☀️';
+});
+
+// 卡片加 tabindex + Enter/Space 无障碍（工单 3.5）
+document.addEventListener('keydown', function(e){
+  const card = e.target.closest && e.target.closest('.card');
+  if(card && (e.key === 'Enter' || e.key === ' ')){
+    e.preventDefault();
+    card.click();
+  }
+});
+
+// 内置兜底数据（仅真实存在的 6 个内置 skill — 与 SKILL.md 扫描结果对齐）
 const BUILTIN = [
-  {name:'skill-creator',icon:'🛠️',category:'开发',description:'创建新的 TRAE Skill',prompts:['帮我创建一个新 Skill']},
+  {name:'digital-avatar-creator',icon:'👤',category:'创作',description:'数字人形象/头像创建',prompts:['帮我创建一个数字人形象']},
   {name:'dynamic-ui',icon:'📊',category:'界面',description:'生成动态 UI 图表和交互视觉元素',prompts:['画一个柱状图','帮我做个流程图表']},
+  {name:'skill-creator',icon:'🛠️',category:'开发',description:'创建新的 TRAE Skill',prompts:['帮我创建一个新 Skill']},
   {name:'TRAE-browseruse',icon:'🌐',category:'浏览器',description:'使用 TRAE 内置浏览器进行网页操作',prompts:['打开浏览器访问 XXX']},
-  {name:'申论范文',icon:'📝',category:'公考',description:'公务员申论范文生成、点评与批改',prompts:['以乡村振兴为主题写申论范文']},
-  {name:'公基速记',icon:'🧠',category:'公考',description:'公共基础知识快速记忆',prompts:['整理《行政复议法》核心考点']},
-  {name:'代码解释',icon:'💻',category:'开发',description:'逐行解释代码逻辑',prompts:['逐行解释这段代码']},
-  {name:'Bug 排查',icon:'🐛',category:'开发',description:'快速定位和修复代码问题',prompts:['这个报错是什么原因？']},
+  {name:'TRAE-browseruse-external',icon:'🔗',category:'浏览器',description:'外部浏览器网页操作',prompts:['在浏览器上帮我做 XXX']},
+  {name:'TRAE-code-mode-orchestrator',icon:'🎼',category:'开发',description:'代码模式编排器',prompts:['帮我重构这段代码']},
 ];
 </script>
 </body>

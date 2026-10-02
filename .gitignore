@@ -1,0 +1,14 @@
+# 临时 / 缓存
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+
+# 系统
+.Trae/
+.trae-cn/

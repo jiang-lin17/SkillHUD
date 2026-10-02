@@ -1,73 +1,66 @@
 # 🎯 SkillHUD · Agent 技能抬头显示
 
-> 一个 TRAE Skill，**装上之后 Agent 就能帮你扫描所有已安装的 Skill，以玻璃材质面板展示功能和用法**。
+> 一个 TRAE Skill — 装上之后 Agent 就能自动扫描所有已安装的 Skill，以玻璃材质面板展示功能和用法。
 
 ## ✨ 是什么
 
-SkillHUD 本身就是一个 **TRAE Skill**。像装任何 Skill 一样装上它，然后在 TRAE 里说：
+SkillHUD **本身就是一个 TRAE Skill**。在 TRAE 里对 Agent 说：
 
 ```
 skillhud
-我有哪些 Skill
-列出我的 Skill 列表
+我的 Skill 列表
 dynamic-ui 这个 Skill 怎么用
+有哪些开发类 Skill
 ```
 
-Agent 就会自动：
-1. 扫描 `.trae-cn/builtin/global/skills/` 里的所有 Skill
-2. 读取每个 SKILL.md 的功能描述
-3. 读取你自定义的 `skills.json` 补充触发提示词和分类
-4. 输出一个**玻璃材质风格的面板**，清晰展示每个 Skill
+Agent 会：
+1. **自动扫描** 项目级 / 插件级 / 内置级 三层 Skill 目录
+2. **解析** 每个 SKILL.md 的 YAML frontmatter
+3. **合并** `skills.json` 里的 overlay（icon / category / prompts / tips）
+4. **渲染** 玻璃材质面板（分类分组 + 搜索 + 展开触发词/贴士）
 
 ```
 ┌─────────────────────────┐
 │ 🎯 SkillHUD              │  ← 玻璃材质面板
 │ 🔍 搜索 Skill…           │
-│ [全部][公考][开发][界面]  │
+│ [全部][开发][界面][浏览器]│
 │                          │
 │ 🛠️ skill-creator   开发   │
-│    创建新的 TRAE Skill…   │
-│ 💬 帮我创建一个新 Skill   │  ← 点卡片展开触发词
+│    创建新 Skill…💬        │  ← 点卡片展开
+│ 💬 帮我创建一个新 Skill   │  ← 一键复制
 │                          │
 │ 📊 dynamic-ui      界面   │
-│    生成动态 UI 图表…      │
-│ 💬 画一个柱状图           │
+│    动态 UI 图表生成…      │
 └─────────────────────────┘
 ```
 
 ## 🚀 安装（就像装 Skill 一样）
 
-### 方式一：手动安装（推荐）
+### Windows
+
+```powershell
+mkdir -Force .trae\skills
+git clone https://github.com/jiang-lin17/SkillHUD.git .trae\skills\skillhud
+```
+
+### macOS / Linux
 
 ```bash
-# 克隆到 TRAE 的项目级 Skill 目录
-# 注意：放在当前项目下 .trae/skills/ 里，该项目专用
-# 或者放在 ~/.trae-cn/ 某个全局位置（取决于 TRAE 版本）
-cd <你的项目目录>
 mkdir -p .trae/skills
 git clone https://github.com/jiang-lin17/SkillHUD.git .trae/skills/skillhud
 ```
 
-### 方式二：复制粘贴（最省事）
+### 验证
 
-直接把仓库里的这两个文件拷贝到**当前项目**的 `.trae/skills/skillhud/` 目录：
-- `SKILL.md` ← 核心（必须）
-- `skills.json` ← 自定义 Skill 描述（可选，改完记得重启 TRAE 或刷新）
+在 TRAE 里对 Agent 说 `skillhud`，如果触发面板展示就装好了。
 
-### 验证安装
+## 📝 自定义：skills.json（Overlay 语义）
 
-在 TRAE 里对 Agent 说：
-```
-skillhud
-```
-如果触发了面板展示，说明装好了！
-
-## 📝 自定义 Skill 描述
-
-编辑 `skills.json`，补充每个 Skill 的**触发提示词**和**使用贴士**：
+`skills.json` 是一个 **overlay**，**只能给已扫描到的 skill 补充字段**。扫描不到的条目**不会**出现在主清单。
 
 ```json
 {
+  "schemaVersion": 1,
   "skills": [
     {
       "name": "dynamic-ui",
@@ -76,53 +69,69 @@ skillhud
       "prompts": ["画一个柱状图", "帮我做个流程图表"],
       "tips": ["支持 16+ 种图表模板"]
     }
+  ],
+  "suggested": [
+    {
+      "name": "申论范文",
+      "icon": "📝",
+      "category": "公考",
+      "_reason": "当前未安装 — 可参考 skill-creator 自建"
+    }
   ]
 }
 ```
 
-SKILL.md 会自动扫描 TRAE 内置 Skill（从 `SKILL.md` 的 YAML frontmatter 里读 name/description），`skills.json` 用来**补充**：
-- 🏷️ 分类标签（自动分组）
-- 💬 用户友好的触发提示词
-- 💡 使用贴士
+### 字段说明
 
-## 🎨 独立预览（浏览器打开 index.html）
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `schemaVersion` | ✅ | 当前固定为 `1` |
+| `skills[]` | ✅ | overlay 条目，只对**扫描命中**的 name 生效 |
+| `suggested[]` | ❌ | 未安装/推荐条目，仅在「未安装」折叠区展示 |
+
+### description 归属
+
+**以 SKILL.md frontmatter 为准**。`skills.json` 里 `description` 仅作兜底（扫描失败时使用）。
+
+### 优先级
+
+**项目级 > 插件级 > 内置级**。同名 skill 后者被前者覆盖。
+
+## 🎨 独立预览（index.html）
 
 ```bash
-# 启动本地服务
-python -m http.server 8080
-# 浏览器访问
-open http://localhost:8080
+python -m http.server 8080   # Windows / macOS / Linux 通用
+# 浏览器打开 http://localhost:8080
 ```
 
-直接打开 `index.html` 也能看（但加载 `skills.json` 可能有 CORS 限制）。这是一份**纯展示面板**，玻璃材质 + 紧凑侧边栏风格，让你预览效果。
+玻璃材质 + 紧凑侧边栏风格，纯 HTML + CSS + 原生 JS，零依赖。
 
 ## 📂 目录结构
 
 ```
 SkillHUD/
-├── SKILL.md       ⭐ TRAE Skill 核心 — Agent 读到这个就会触发面板
-├── skills.json    ⭐ 你的 Skill 描述库（编辑这个）
-├── index.html     独立预览面板（浏览器直接打开）
-└── README.md      本文件
+├── SKILL.md       ⭐ TRAE Skill 核心 — Agent 读到这个就会触发
+├── skills.json    ⭐ overlay 配置（编辑这个补充触发词/分类）
+├── index.html     独立预览面板（玻璃材质）
+├── README.md
+├── LICENSE
+└── .gitignore
 ```
-
-## ⌨️ 使用
-
-安装后在 TRAE 里对 Agent 说：
-
-| 你说的 | Agent 做的 |
-|--------|-----------|
-| `skillhud` | 展示完整 Skill 清单（玻璃面板风格） |
-| `我的 Skill 列表` | 同上 |
-| `dynamic-ui 怎么用` | 定位到该 Skill，读取完整 SKILL.md 并提炼成使用指南 |
-| `有哪些公考类 Skill` | 按分类过滤后展示 |
 
 ## 🛠️ 技术说明
 
-- **Skill 扫描逻辑**：SKILL.md 里的 Prompt Engineering 指令告诉 Agent 如何用 PowerShell 扫描 `.trae-cn/builtin/global/skills/` 目录、解析每个 SKILL.md 的 YAML frontmatter
-- **合并策略**：先扫描系统 Skill，再合并 `skills.json` 里的补充信息
-- **零外部依赖**：SKILL.md 不依赖任何第三方库，纯 Prompt Engineering
+- **扫描逻辑**：SKILL.md 里的 Prompt Engineering 指令，告诉 Agent 用 PowerShell / find 递归扫描三层目录，解析每个 SKILL.md 的 YAML frontmatter
+- **路径跨平台**：Windows 用 `%USERPROFILE%` + PowerShell 内联函数，macOS/Linux 用 `~` + find
+- **frontmatter 解析**：读首个 `---` 到下一个 `---` 之间的全部行，支持带引号的值
+- **渲染**：主路径调用 `dynamic-ui` 的 PureShowWidget 渲染玻璃面板；降级路径输出 Markdown 清单
+- **零运行时依赖**：无 npm / 无构建工具
+
+## ⚠️ 已知约束
+
+- **自动读取已装 Skill** 受限于各 Agent 的 Skill 目录结构不同。SkillHUD 是 TRAE 专用，其他 Agent 不支持
+- **插件 Skill** 目录深度不一（`plugins/<plugin>/<version>/skills/<name>/SKILL.md`），必须递归扫描
+- **SKILL.md 自身不展示** — SkillHUD 是展示者不是被展示者
 
 ## 📜 License
 
-MIT
+MIT — 见 `LICENSE` 文件。
