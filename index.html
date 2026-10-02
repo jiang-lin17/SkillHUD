@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>🎯 SkillHUD · 独立预览面板</title>
+<style>
+:root {
+  --bg: #f0f2f5;
+  --glass: rgba(255,255,255,0.55);
+  --glass-dark: rgba(25,27,33,0.65);
+  --text: #1d2129;
+  --text-sub: rgba(0,0,0,0.55);
+  --text-muted: rgba(0,0,0,0.4);
+  --border: rgba(0,0,0,0.06);
+  --accent: #3370ff;
+  --accent2: #7b61ff;
+}
+[data-theme="dark"] {
+  --bg: #14171d;
+  --text: #e5e6eb;
+  --text-sub: rgba(255,255,255,0.6);
+  --text-muted: rgba(255,255,255,0.45);
+  --border: rgba(255,255,255,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  /* 背景装饰 */
+  background-image:
+    radial-gradient(circle at 15% 25%, rgba(51,112,255,0.18) 0%, transparent 45%),
+    radial-gradient(circle at 85% 75%, rgba(123,97,255,0.18) 0%, transparent 45%);
+  background-attachment: fixed;
+}
+.wrap { display: flex; gap: 24px; padding: 40px; align-items: flex-start; max-width: 1400px; margin: 0 auto; }
+.info { flex: 1; max-width: 600px; padding-top: 20px; }
+.info h1 {
+  font-size: 42px; margin-bottom: 12px;
+  background: linear-gradient(135deg, #3370ff, #7b61ff);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.info p { color: var(--text-sub); line-height: 1.7; margin-bottom: 12px; font-size: 15px; }
+.info ul { color: var(--text-sub); padding-left: 20px; line-height: 1.9; font-size: 14px; }
+.info code {
+  background: rgba(51,112,255,0.1); padding: 2px 6px; border-radius: 4px;
+  font-family: "SF Mono", Consolas, monospace; font-size: 13px;
+}
+
+/* ========== 玻璃面板 ========== */
+.panel {
+  width: 320px; max-height: 85vh; overflow: hidden;
+  background: var(--glass);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.6);
+  box-shadow: -8px 12px 40px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6);
+  display: flex; flex-direction: column;
+  position: sticky; top: 40px;
+}
+[data-theme="dark"] .panel {
+  background: var(--glass-dark);
+  border-color: rgba(255,255,255,0.1);
+  box-shadow: -8px 12px 40px rgba(0,0,0,0.5);
+}
+.head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 10px; border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.2);
+}
+[data-theme="dark"] .head { background: rgba(255,255,255,0.04); }
+.title { font-weight: 700; font-size: 15px; }
+.title span:last-child {
+  background: linear-gradient(135deg, #3370ff, #7b61ff);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.btns { display: flex; gap: 4px; }
+.btns button {
+  width: 26px; height: 26px; border: none; background: transparent;
+  border-radius: 6px; cursor: pointer; font-size: 13px;
+  color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+}
+.btns button:hover { background: rgba(0,0,0,0.06); color: var(--text); }
+
+.srch-wrap { padding: 8px 16px; position: relative; }
+.srch-wrap::before {
+  content: "🔍"; position: absolute; left: 26px; top: 50%;
+  transform: translateY(-50%); font-size: 12px; opacity: 0.5; pointer-events: none;
+}
+.srch {
+  width: 100%; padding: 9px 10px 9px 32px; font-size: 12px;
+  background: rgba(255,255,255,0.5); border: 1px solid var(--border);
+  border-radius: 10px; outline: none; color: inherit;
+  backdrop-filter: blur(8px); font-family: inherit;
+}
+.srch:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(51,112,255,0.15); }
+[data-theme="dark"] .srch { background: rgba(255,255,255,0.08); }
+
+.tabs {
+  display: flex; gap: 4px; padding: 0 16px 8px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  padding: 5px 12px; font-size: 11px; white-space: nowrap;
+  background: rgba(0,0,0,0.04); border: none; border-radius: 12px;
+  cursor: pointer; color: var(--text-sub); transition: 0.15s;
+}
+[data-theme="dark"] .tab { background: rgba(255,255,255,0.08); }
+.tab:hover { background: rgba(51,112,255,0.1); }
+.tab.on { background: linear-gradient(135deg, #3370ff, #7b61ff); color: #fff; }
+
+.list {
+  flex: 1; overflow-y: auto; padding: 4px 16px 12px; scrollbar-width: thin;
+}
+.list::-webkit-scrollbar { width: 4px; }
+.list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+
+.grp { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;
+       color: var(--text-muted); margin: 14px 2px 6px; }
+.grp:first-child { margin-top: 4px; }
+
+.card {
+  background: rgba(255,255,255,0.5); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; cursor: pointer;
+  transition: 0.2s cubic-bezier(.2,.8,.2,1); backdrop-filter: blur(12px);
+}
+[data-theme="dark"] .card { background: rgba(255,255,255,0.06); border-color: transparent; }
+.card:hover { transform: translateX(-2px); background: rgba(255,255,255,0.75);
+              box-shadow: -4px 4px 16px rgba(51,112,255,0.12); border-color: rgba(51,112,255,0.3); }
+.card.open { background: rgba(255,255,255,0.85); border-color: rgba(51,112,255,0.4); }
+[data-theme="dark"] .card.open { background: rgba(255,255,255,0.12); }
+.card-top { display: flex; align-items: center; gap: 8px; }
+.ic {
+  font-size: 16px; width: 24px; height: 24px;
+  background: rgba(51,112,255,0.12); border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+[data-theme="dark"] .ic { background: rgba(123,97,255,0.25); }
+.nm { flex: 1; font-weight: 600; font-size: 12.5px; }
+.bd { font-size: 9px; padding: 2px 6px; background: rgba(0,0,0,0.05);
+      color: var(--text-muted); border-radius: 4px; font-weight: 500; }
+.ds { font-size: 11.5px; color: var(--text-sub); margin-top: 5px; line-height: 1.45;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.detail { margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(0,0,0,0.1); display: none; }
+.card.open .detail { display: block; }
+[data-theme="dark"] .detail { border-color: rgba(255,255,255,0.1); }
+.sec { font-size: 10px; font-weight: 600; color: var(--text-muted); margin: 6px 0 4px; }
+.sec:first-child { margin-top: 0; }
+
+.prompt {
+  position: relative; padding: 7px 32px 7px 10px;
+  background: rgba(51,112,255,0.06); border: 1px solid rgba(51,112,255,0.12);
+  border-radius: 6px; font-size: 11px; line-height: 1.45;
+  margin-bottom: 4px; cursor: pointer; font-family: "SF Mono", Consolas, monospace;
+  transition: 0.15s; word-break: break-all;
+}
+.prompt:hover { background: rgba(51,112,255,0.12); border-color: rgba(51,112,255,0.3); }
+.prompt:hover .cp { opacity: 1; }
+.cp {
+  position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border: none;
+  background: rgba(255,255,255,0.9); border-radius: 4px; cursor: pointer; font-size: 10px;
+  opacity: 0; transition: 0.15s; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.tip { font-size: 11px; color: var(--text-sub); padding-left: 12px; position: relative; line-height: 1.5; }
+.tip::before { content: "💡"; position: absolute; left: 0; font-size: 9px; top: 1px; }
+
+.foot { padding: 8px 16px; border-top: 1px solid var(--border); font-size: 10px;
+        color: var(--text-muted); background: rgba(255,255,255,0.2);
+        display: flex; justify-content: space-between; align-items: center; }
+[data-theme="dark"] .foot { background: rgba(255,255,255,0.04); }
+
+.empty { padding: 40px 10px; text-align: center; color: var(--text-muted); font-size: 12px; }
+.empty-e { font-size: 32px; margin-bottom: 8px; opacity: 0.5; }
+
+@media (max-width: 800px) {
+  .wrap { flex-direction: column; padding: 20px; }
+  .panel { width: 100%; max-height: none; position: static; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="info">
+    <h1>🎯 SkillHUD</h1>
+    <p>给 Agent 做一个<strong>抬头显示器</strong>——你装了哪些 Skill、每个干嘛用、怎么触发，一眼全看到。</p>
+    <p>这是一份<strong>独立预览面板</strong>，直接浏览器打开就能体验玻璃材质效果。真正的用法是作为 TRAE Skill 安装：</p>
+    <ul>
+      <li>把仓库克隆到 <code>.trae/skills/skillhud/</code></li>
+      <li>打开 TRAE 说 <code>"skillhud"</code> 或 <code>"我的 Skill 列表"</code></li>
+      <li>Agent 会自动扫描并展示面板</li>
+    </ul>
+    <p style="margin-top:20px;font-size:12px;color:var(--text-muted);">
+      当前面板是浏览器独立预览，Agent 集成时会自动扫描 TRAE 的 Skill 目录。
+    </p>
+  </div>
+
+  <!-- 玻璃面板 -->
+  <div class="panel" id="panel">
+    <div class="head">
+      <div class="title"><span>🎯</span><span>SkillHUD</span></div>
+      <div class="btns">
+        <button onclick="document.documentElement.toggleAttribute('data-theme','dark'); this.textContent = this.textContent==='🌓'?'☀️':'🌓'">🌓</button>
+      </div>
+    </div>
+    <div class="srch-wrap">
+      <input class="srch" id="srch" placeholder="搜索 Skill…" />
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="list" id="list"></div>
+    <div class="foot">
+      <span id="stat">加载中…</span>
+      <a href="https://github.com/jiang-lin17/SkillHUD" target="_blank" style="color:var(--accent);text-decoration:none">GitHub ↗</a>
+    </div>
+  </div>
+</div>
+
+<script>
+let skills = [], activeCat = "all", openCards = new Set();
+
+// 尝试加载 skills.json，失败用内置数据
+(async function(){
+  try {
+    const r = await fetch('skills.json');
+    if (r.ok) skills = (await r.json()).skills || [];
+  } catch {
+    skills = BUILTIN;
+  }
+  buildTabs(); render();
+})();
+
+function buildTabs(){
+  const cats = [...new Set(skills.map(s=>s.category||'其他'))].sort();
+  document.getElementById('tabs').innerHTML =
+    `<button class="tab on" data-cat="all">全部 ${skills.length}</button>` +
+    cats.map(c=>`<button class="tab" data-cat="${c}">${c} ${skills.filter(s=>s.category===c).length}</button>`).join('');
+  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+    activeCat=b.dataset.cat;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+    b.classList.add('on'); render();
+  });
+}
+
+function render(){
+  const q = (document.getElementById('srch').value||'').toLowerCase();
+  let filtered = skills.filter(s=>{
+    if(activeCat!=='all' && s.category!==activeCat) return false;
+    if(!q) return true;
+    return (s.name||'').toLowerCase().includes(q)
+      || (s.description||'').toLowerCase().includes(q)
+      || (s.prompts||[]).some(p=>p.toLowerCase().includes(q));
+  });
+
+  if(filtered.length===0){
+    document.getElementById('list').innerHTML = '<div class="empty"><div class="empty-e">🔍</div>没有匹配的 Skill</div>';
+    document.getElementById('stat').textContent = skills.length+' 个已装'; return;
+  }
+
+  const groups = {};
+  filtered.forEach(s=>((groups[s.category||'其他']=groups[s.category||'其他']||[]).push(s)));
+  let html='';
+  Object.keys(groups).sort().forEach(cat=>{
+    html += `<div class="grp">${esc(cat)}</div>`;
+    groups[cat].forEach(s=>html += card(s));
+  });
+  document.getElementById('list').innerHTML = html;
+  document.getElementById('stat').textContent = skills.length+' 个已装';
+
+  document.querySelectorAll('.card').forEach(el=>{
+    const n = el.dataset.name;
+    if(openCards.has(n)) el.classList.add('open');
+    el.onclick = (e)=>{
+      if(e.target.classList.contains('cp') || e.target.closest('.prompt')) return;
+      if(openCards.has(n)) openCards.delete(n); else openCards.add(n);
+      el.classList.toggle('open');
+    };
+  });
+  document.querySelectorAll('.prompt').forEach(p=>{
+    p.onclick = (e)=>{ e.stopPropagation(); copy(p.dataset.text); };
+  });
+}
+
+function card(s){
+  const open = openCards.has(s.name);
+  const prompts = (s.prompts||[]).map(p=>`<div class="prompt" data-text="${escAttr(p)}">💬 ${esc(p)}<button class="cp" title="复制">📋</button></div>`).join('');
+  const tips = (s.tips||[]).map(t=>`<div class="tip">${esc(t)}</div>`).join('');
+  return `<div class="card ${open?'open':''}" data-name="${escAttr(s.name)}">
+    <div class="card-top">
+      <div class="ic">${s.icon||'⚡'}</div>
+      <div class="nm">${esc(s.name)}</div>
+      <div class="bd">${esc(s.category||'其他')}</div>
+    </div>
+    <div class="ds">${esc(s.description||'')}</div>
+    <div class="detail">
+      ${prompts?`<div class="sec">💬 触发提示词</div>${prompts}`:''}
+      ${tips?`<div class="sec">💡 使用贴士</div>${tips}`:''}
+    </div></div>`;
+}
+
+function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);}
+function escAttr(s){return String(s).replace(/"/g,'&quot;');}
+async function copy(t){
+  try { await navigator.clipboard.writeText(t); toast('✅ 已复制'); }
+  catch{ const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✅ 已复制'); }
+}
+function toast(msg){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  Object.assign(t.style,{position:'fixed',bottom:'40px',left:'50%',transform:'translateX(-50%)',
+    background:'rgba(29,33,41,0.9)',backdropFilter:'blur(16px)',color:'#fff',padding:'8px 18px',
+    borderRadius:'10px',fontSize:'13px',zIndex:9999,boxShadow:'0 4px 24px rgba(0,0,0,0.25)'});
+  document.body.appendChild(t); setTimeout(()=>t.remove(),1500);
+}
+document.getElementById('srch').oninput=render;
+
+// 内置兜底数据
+const BUILTIN = [
+  {name:'skill-creator',icon:'🛠️',category:'开发',description:'创建新的 TRAE Skill',prompts:['帮我创建一个新 Skill']},
+  {name:'dynamic-ui',icon:'📊',category:'界面',description:'生成动态 UI 图表和交互视觉元素',prompts:['画一个柱状图','帮我做个流程图表']},
+  {name:'TRAE-browseruse',icon:'🌐',category:'浏览器',description:'使用 TRAE 内置浏览器进行网页操作',prompts:['打开浏览器访问 XXX']},
+  {name:'申论范文',icon:'📝',category:'公考',description:'公务员申论范文生成、点评与批改',prompts:['以乡村振兴为主题写申论范文']},
+  {name:'公基速记',icon:'🧠',category:'公考',description:'公共基础知识快速记忆',prompts:['整理《行政复议法》核心考点']},
+  {name:'代码解释',icon:'💻',category:'开发',description:'逐行解释代码逻辑',prompts:['逐行解释这段代码']},
+  {name:'Bug 排查',icon:'🐛',category:'开发',description:'快速定位和修复代码问题',prompts:['这个报错是什么原因？']},
+];
+</script>
+</body>
+</html>

@@ -1,141 +1,128 @@
 # 🎯 SkillHUD · Agent 技能抬头显示
 
-> 一个 Chrome 扩展，像**抬头显示器**一样贴在 Agent 网页边上——你装了哪些 Skill、功能是啥、怎么触发，一眼全看到。
+> 一个 TRAE Skill，**装上之后 Agent 就能帮你扫描所有已安装的 Skill，以玻璃材质面板展示功能和用法**。
 
 ## ✨ 是什么
 
-打开任意 Agent 网页（TRAE、Claude.ai、Kimi、豆包、Copilot Chat…），页面右侧会出现一个 **"SKILLHUD"竖条小按钮** → 点一下展开紧凑侧边面板，里面就是你的 Skill 清单。
+SkillHUD 本身就是一个 **TRAE Skill**。像装任何 Skill 一样装上它，然后在 TRAE 里说：
 
 ```
-┌─────────────┐  ┌───────────────────┐
-│   你的 Agent   │  │ 🎯 SkillHUD        │
-│   对话界面     │  │ 🔍 搜索 Skill…     │
-│              │  │ [全部][公考][开发] │
-│   👈 主要区域   │  │ 📝 申论范文    公考 │
-│              │  │    范文生成…💬       │
-│              │  │ 🧠 公基速记    公考 │
-│              │  │  ⋯ 点击看详情⋯      │
-│              │  └───────────────────┘
-└─────────────┘         ⬆ 280px 紧凑
+skillhud
+我有哪些 Skill
+列出我的 Skill 列表
+dynamic-ui 这个 Skill 怎么用
 ```
 
-## ✅ 特性
+Agent 就会自动：
+1. 扫描 `.trae-cn/builtin/global/skills/` 里的所有 Skill
+2. 读取每个 SKILL.md 的功能描述
+3. 读取你自定义的 `skills.json` 补充触发提示词和分类
+4. 输出一个**玻璃材质风格的面板**，清晰展示每个 Skill
 
-| 特性 | 说明 |
-|------|------|
-| 🔌 **Chrome 扩展** | Manifest V3，安装即用，贴在任何网页边上 |
-| 🪶 **零侵入** | Shadow DOM 隔离，不影响宿主页面任何样式和脚本 |
-| 🎛️ **紧凑面板** | 280px 宽，可折叠、可拖拽、可换边 |
-| 🔍 **搜索 + 分类** | 秒搜 + 分类 Tab |
-| 📋 **一键复制** | 提示词点一下就复制到剪贴板 |
-| 🌓 **明暗主题** | 自动跟随系统 / 手动切换 |
-| ⌨️ **快捷键** | `Ctrl/Cmd + Shift + H` 切换面板、`Esc` 收起 |
-| 💾 **自动记忆** | 位置、主题、展开状态全部本地保存 |
+```
+┌─────────────────────────┐
+│ 🎯 SkillHUD              │  ← 玻璃材质面板
+│ 🔍 搜索 Skill…           │
+│ [全部][公考][开发][界面]  │
+│                          │
+│ 🛠️ skill-creator   开发   │
+│    创建新的 TRAE Skill…   │
+│ 💬 帮我创建一个新 Skill   │  ← 点卡片展开触发词
+│                          │
+│ 📊 dynamic-ui      界面   │
+│    生成动态 UI 图表…      │
+│ 💬 画一个柱状图           │
+└─────────────────────────┘
+```
 
-## 🚀 安装
+## 🚀 安装（就像装 Skill 一样）
 
-### 方法一：加载已解压的扩展（推荐开发者）
+### 方式一：手动安装（推荐）
 
-1. **下载/克隆** 本仓库
-2. 打开 Chrome，访问 `chrome://extensions/`
-3. 右上角开启 **开发者模式**
-4. 点 **加载已解压的扩展程序** → 选择 `SkillHUD` 文件夹
-5. 打开任意网页（比如 https://trae.ai / https://claude.ai / https://kimi.moonshot.cn 等）
-6. 页面右边中间会出现一个 **"SKILLHUD"竖条** → 点它！
+```bash
+# 克隆到 TRAE 的项目级 Skill 目录
+# 注意：放在当前项目下 .trae/skills/ 里，该项目专用
+# 或者放在 ~/.trae-cn/ 某个全局位置（取决于 TRAE 版本）
+cd <你的项目目录>
+mkdir -p .trae/skills
+git clone https://github.com/jiang-lin17/SkillHUD.git .trae/skills/skillhud
+```
 
-### 方法二：发布后安装（将来）
+### 方式二：复制粘贴（最省事）
 
-上架 Chrome Web Store 后直接点"添加至 Chrome"。
+直接把仓库里的这两个文件拷贝到**当前项目**的 `.trae/skills/skillhud/` 目录：
+- `SKILL.md` ← 核心（必须）
+- `skills.json` ← 自定义 Skill 描述（可选，改完记得重启 TRAE 或刷新）
 
-## 📝 自定义你的 Skill
+### 验证安装
 
-**编辑一个文件就够了**：`skills.json`
+在 TRAE 里对 Agent 说：
+```
+skillhud
+```
+如果触发了面板展示，说明装好了！
+
+## 📝 自定义 Skill 描述
+
+编辑 `skills.json`，补充每个 Skill 的**触发提示词**和**使用贴士**：
 
 ```json
 {
   "skills": [
     {
-      "name": "我的新技能",
-      "icon": "🚀",
-      "category": "效率",
-      "description": "一句话说清楚它能干嘛",
-      "prompts": ["帮我做 XXX", "换个方式做 YYY"],
-      "tips": ["贴士一", "贴士二"]
+      "name": "dynamic-ui",
+      "icon": "📊",
+      "category": "界面",
+      "prompts": ["画一个柱状图", "帮我做个流程图表"],
+      "tips": ["支持 16+ 种图表模板"]
     }
   ]
 }
 ```
 
-### 字段说明
+SKILL.md 会自动扫描 TRAE 内置 Skill（从 `SKILL.md` 的 YAML frontmatter 里读 name/description），`skills.json` 用来**补充**：
+- 🏷️ 分类标签（自动分组）
+- 💬 用户友好的触发提示词
+- 💡 使用贴士
 
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `name` | ✅ | Skill 显示名称 |
-| `icon` | ❌ | emoji 图标，默认 ⚡ |
-| `category` | ❌ | 分类标签，相同分类自动分组 |
-| `description` | ✅ | 功能一句话描述 |
-| `prompts` | ❌ | 触发提示词数组，点卡片可一键复制 |
-| `tips` | ❌ | 使用小贴士数组 |
+## 🎨 独立预览（浏览器打开 index.html）
 
-### 改完怎么生效
+```bash
+# 启动本地服务
+python -m http.server 8080
+# 浏览器访问
+open http://localhost:8080
+```
 
-`chrome://extensions/` → SkillHUD 那张卡片上点 **🔄 刷新**（或者点扩展图标里的刷新按钮）。
+直接打开 `index.html` 也能看（但加载 `skills.json` 可能有 CORS 限制）。这是一份**纯展示面板**，玻璃材质 + 紧凑侧边栏风格，让你预览效果。
 
-## 📁 目录结构
+## 📂 目录结构
 
 ```
 SkillHUD/
-├── manifest.json     # Chrome 扩展配置（Manifest V3）
-├── content.js        # 注入脚本 + 完整面板逻辑（约 500 行，零依赖）
-├── skills.json       # ⭐ 你的 Skill 配置（编辑这个）
-├── icons/            # 扩展图标
-│   ├── icon16.png
-│   ├── icon32.png
-│   ├── icon48.png
-│   └── icon128.png
-└── README.md
+├── SKILL.md       ⭐ TRAE Skill 核心 — Agent 读到这个就会触发面板
+├── skills.json    ⭐ 你的 Skill 描述库（编辑这个）
+├── index.html     独立预览面板（浏览器直接打开）
+└── README.md      本文件
 ```
 
-**没有 node_modules，没有构建，没有打包工具。** 纯原生 JS + Shadow DOM。
+## ⌨️ 使用
 
-## 🛠️ 技术亮点
+安装后在 TRAE 里对 Agent 说：
 
-- **Shadow DOM**：所有样式和 DOM 节点完全隔离，不被宿主页面污染
-- **pointer-events 分层**：宿主容器 `pointer-events: none`，只有面板区域 `pointer-events: auto`——面板外的页面正常点击穿透
-- **极简 YAML → 改成 JSON 了**：直接 fetch 内置 JSON 配置，避免 YAML 解析器的复杂性
-- **position: fixed + transform**：面板绝对定位 + 拖拽移动，百分比存储位置，响应式自适应窗口缩放
+| 你说的 | Agent 做的 |
+|--------|-----------|
+| `skillhud` | 展示完整 Skill 清单（玻璃面板风格） |
+| `我的 Skill 列表` | 同上 |
+| `dynamic-ui 怎么用` | 定位到该 Skill，读取完整 SKILL.md 并提炼成使用指南 |
+| `有哪些公考类 Skill` | 按分类过滤后展示 |
 
-## ⌨️ 快捷键
+## 🛠️ 技术说明
 
-| 快捷键 | 功能 |
-|--------|------|
-| `Ctrl / Cmd + Shift + H` | 切换面板展开/收起 |
-| `Esc` | 收起面板 |
-| 点击浮动竖条 | 展开面板 |
-| 拖拽面板头部 | 移动面板位置 |
-| 面板头部 ⇄ 按钮 | 切换到另一边 |
-| 面板头部 🌓 按钮 | 切换主题（自动/浅色/深色） |
-
-## 💡 典型使用场景
-
-- **贴在 Agent 对话页边上** — 边聊边看提示词，不用切窗口
-- **学习阶段** — 展开面板对照着试各种 Skill
-- **团队共享** — 把 `skills.json` 发群里，大家用同款面板
-- **新人入门** — 给新同事装一个，快速知道团队 Agent 有啥能力
-
-## 🤔 常见问题
-
-**Q: 为什么不能自动读取我在 TRAE/Claude 里装的 Skill？**  
-每个 Agent 生态的 Skill 格式和存储方式完全不同（有的在本地配置，有的是 prompt templates，有的根本不叫 Skill），**统一自动发现不可行**。但手动配置一份 `skills.json` 只需要几分钟，而且你能完全掌控展示哪些 Skill。
-
-**Q: 面板位置记不住？**  
-拖拽面板头部到你喜欢的位置，刷新页面/重启浏览器都能记住。位置、主题、展开状态全部存在 `localStorage`。
-
-**Q: 支持 Safari/Firefox/Edge？**  
-- Edge：完全兼容（同 Chromium）
-- Firefox：需要把 Manifest V3 改成 Firefox MV3 格式，主要是权限声明方式略有不同
-- Safari：需要用 Safari Web Extension Converter 转换
+- **Skill 扫描逻辑**：SKILL.md 里的 Prompt Engineering 指令告诉 Agent 如何用 PowerShell 扫描 `.trae-cn/builtin/global/skills/` 目录、解析每个 SKILL.md 的 YAML frontmatter
+- **合并策略**：先扫描系统 Skill，再合并 `skills.json` 里的补充信息
+- **零外部依赖**：SKILL.md 不依赖任何第三方库，纯 Prompt Engineering
 
 ## 📜 License
 
-MIT — 随便改、随便用。
+MIT
