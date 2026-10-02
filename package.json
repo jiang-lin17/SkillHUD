@@ -1,0 +1,14 @@
+{
+  "name": "skillhud",
+  "version": "1.0.0",
+  "description": "🎯 SkillHUD - 悬浮在 Agent 上的 Skill 面板",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "jiang-lin17",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.4.11"
+  }
+}

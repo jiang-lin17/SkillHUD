@@ -12,3 +12,9 @@ Thumbs.db
 # 系统
 .Trae/
 .trae-cn/
+
+# Node / Electron
+node_modules/
+electron.zip
+dist/
+out/

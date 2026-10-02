@@ -18,15 +18,40 @@ description: "展示当前 Agent 已安装的所有 Skill 的功能和用法。�
 
 ## 📂 第一步：跨平台扫描所有 Skill
 
-### 路径解析规则
+### 数据源（两层合并）
+
+| 层级 | 说明 | 路径 |
+|---|---|---|
+| **本地已装** | TRAE 内置 + 插件 + 项目 | 见下方三级路径 |
+| **外部仓库** | awesome-ai-skills 精选 194+ 个 | `<cwd>\awesome-ai-skills\docs\data\skills.json` |
+
+### 本地三级路径（优先级：项目 > 插件 > 内置）
 
 | 类型 | Windows | macOS / Linux |
 |---|---|---|
 | 内置 | `%USERPROFILE%\.trae-cn\builtin\global\skills\<name>\SKILL.md` | `~/.trae-cn/builtin/global/skills/<name>/SKILL.md` |
-| 插件 | 递归搜索 `%USERPROFILE%\.trae-cn\plugins\**\skills\*\SKILL.md` | `~/.trae-cn/plugins/**/skills/*/SKILL.md` |
+| 插件 | 递归 `%USERPROFILE%\.trae-cn\plugins\**\skills\*\SKILL.md` | `~/.trae-cn/plugins/**/skills/*/SKILL.md` |
 | 项目 | `<cwd>\.trae\skills\<name>\SKILL.md` | `<cwd>/.trae/skills/<name>/SKILL.md` |
 
 > **重要**：插件路径必须递归到深层（实测结构为 `plugins/<plugin>/<version>/skills/<name>/SKILL.md`），不要停留在 `plugins/` 一层。
+
+### 外部仓库扫描
+
+```powershell
+# 检查 awesome-ai-skills 仓库是否存在
+$repoPath = Join-Path (Get-Location) "awesome-ai-skills\docs\data\skills.json"
+if(Test-Path $repoPath){
+  $repoSkills = Get-Content $repoPath -Raw | ConvertFrom-Json
+  # 仓库条目结构：
+  # { id, name, emoji, shortDesc, category, stars, repoUrl, owner, repo, install, usage, features[] }
+}
+```
+
+### 合并规则
+
+1. 本地和仓库分开展示（本地带 ✅ 已装徽章，仓库带 📦 外部徽章）
+2. 如果本地 skill name 匹配仓库 id → 标注为「已发现，可直接用」
+3. 仓库 skill 不计入本地扫描数量（分开统计）
 
 ### 优先级
 
